@@ -1,12 +1,14 @@
 #!/bin/bash
 
+dir="$1"
+search_string="$2"
+
+
 if [[ "$#" -ne 2 ]]; then
-    echo "Введите путь и строку поиска"
+    echo "Пример использования $0: test text"
     exit 1
 fi
 
-dir="$1"
-string="$2"
 
 find "$dir" 2>/dev/null | while read file; do
     if [[ -d "$file" ]]; then
@@ -24,7 +26,7 @@ find "$dir" 2>/dev/null | while read file; do
         continue
     fi
 
-if grep -q "$string" "$file"; then
+if grep -q "$search_string" "$file"; then
     size_file=$(stat -c%s "$file")
     echo "Искомая строка в файле: $file Размер: $size_file байт"
 fi
