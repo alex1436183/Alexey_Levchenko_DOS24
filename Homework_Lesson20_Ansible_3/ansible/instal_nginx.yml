@@ -1,3 +1,4 @@
+
 ---
 - name: Install Nginx on servers
   hosts: all
