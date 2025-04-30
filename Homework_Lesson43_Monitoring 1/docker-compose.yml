@@ -1,0 +1,79 @@
+version: '3.5'
+
+networks:
+  zabbix-net:
+    driver: bridge
+
+services:
+
+  mysql-server:
+    image: mysql:8.0
+    container_name: mysql-server
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_bin
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password123
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: zabbix_password123
+    volumes:
+      - ./zabbix/mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - zabbix-net
+    restart: unless-stopped
+
+  zabbix-server-mysql:
+    image: zabbix/zabbix-server-mysql:6.0.25-alpine
+    container_name: zabbix-server
+    depends_on:
+      - mysql-server
+    environment:
+      DB_SERVER_HOST: mysql-server
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: zabbix_password123
+      MYSQL_ROOT_PASSWORD: root_password123
+    ports:
+      - "10051:10051"
+    networks:
+      - zabbix-net
+    restart: unless-stopped
+
+  zabbix-web-nginx-mysql:
+    image: zabbix/zabbix-web-nginx-mysql:6.0.25-alpine
+    container_name: zabbix-web
+    depends_on:
+      - mysql-server
+      - zabbix-server-mysql
+    environment:
+      ZBX_SERVER_HOST: zabbix-server
+      DB_SERVER_HOST: mysql-server
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: zabbix_password123
+      MYSQL_ROOT_PASSWORD: root_password123
+      PHP_TZ: Europe/Riga
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    networks:
+      - zabbix-net
+    restart: unless-stopped
+
+  zabbix-agent:
+    image: zabbix/zabbix-agent:6.0.25-alpine
+    container_name: zabbix-agent
+    depends_on:
+      - zabbix-server-mysql
+    environment:
+      ZBX_SERVER_HOST: zabbix-server  
+      ZBX_SERVER_ACTIVE: zabbix-server:10051
+      ZBX_HOSTNAME: zabbix-agent
+    ports:
+      - "10050:10050"
+    networks:
+      - zabbix-net
+    restart: unless-stopped
